@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { getEvidence } from "../utils/evidenceStorage";
 
 function CaseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Evidence added by the evidence management feature.
+  // Use the current case ID instead of hardcoding case 1.
+  const evidenceItems = getEvidence().filter(
+    (item) => String(item.caseId) === String(id)
+  );
 
   const [caseData, setCaseData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -120,7 +127,10 @@ function CaseDetails() {
                 This case may have been deleted or does not exist.
               </p>
 
-              <Link to="/dashboard" className="btn btn-primary">
+              <Link
+                to="/dashboard"
+                className="btn btn-primary"
+              >
                 Return to Dashboard
               </Link>
             </div>
@@ -178,18 +188,29 @@ function CaseDetails() {
                         setEditCategory(event.target.value)
                       }
                     >
-                      <option value="">Select Category</option>
-                      <option value="Housing">Housing</option>
+                      <option value="">
+                        Select Category
+                      </option>
+
+                      <option value="Housing">
+                        Housing
+                      </option>
+
                       <option value="Product Issue">
                         Product Issue
                       </option>
+
                       <option value="Employment">
                         Employment
                       </option>
+
                       <option value="Insurance">
                         Insurance
                       </option>
-                      <option value="Other">Other</option>
+
+                      <option value="Other">
+                        Other
+                      </option>
                     </select>
                   </div>
 
@@ -205,9 +226,17 @@ function CaseDetails() {
                         setEditStatus(event.target.value)
                       }
                     >
-                      <option value="Active">Active</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Closed">Closed</option>
+                      <option value="Active">
+                        Active
+                      </option>
+
+                      <option value="Pending">
+                        Pending
+                      </option>
+
+                      <option value="Closed">
+                        Closed
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -333,7 +362,7 @@ function CaseDetails() {
               </div>
 
               <div className="fs-3 fw-bold">
-                {caseData.evidenceCount || 0}
+                {evidenceItems.length}
               </div>
             </div>
           </div>
@@ -403,6 +432,42 @@ function CaseDetails() {
           </div>
         </div>
 
+        {/* Evidence added through the upload/evidence storage feature */}
+        {evidenceItems.map((item) => (
+          <div
+            className="case-card mb-3"
+            key={item.id}
+          >
+            <div className="p-4">
+              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                <div>
+                  <div className="section-label mb-1">
+                    {item.type} • {item.date}
+                  </div>
+
+                  <h5 className="fw-bold">
+                    {item.name}
+                  </h5>
+
+                  <p className="text-muted mb-0">
+                    {item.description}
+                  </p>
+                </div>
+
+                <div className="d-flex gap-2 align-items-start">
+                  <Link
+                    to={`/case/${item.caseId}/evidence/${item.id}`}
+                    className="btn btn-sm btn-outline-primary"
+                  >
+                    View
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Existing sample evidence */}
         <div className="case-card mb-3">
           <div className="p-4">
             <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
@@ -421,9 +486,12 @@ function CaseDetails() {
               </div>
 
               <div className="d-flex gap-2 align-items-start">
-                <button className="btn btn-sm btn-outline-primary">
+                <Link
+                  to="/case/1/evidence/1"
+                  className="btn btn-sm btn-outline-primary"
+                >
                   View
-                </button>
+                </Link>
 
                 <button className="btn btn-sm btn-outline-secondary">
                   Edit

@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { saveEvidence } from "../utils/evidenceStorage";
 
 function UploadEvidence() {
   const navigate = useNavigate();
 
   const [fileName, setFileName] = useState("");
+  const [evidenceName, setEvidenceName] = useState("");
+  const [evidenceType, setEvidenceType] = useState("");
+  const [evidenceDate, setEvidenceDate] = useState("");
+  const [personInvolved, setPersonInvolved] = useState("");
+  const [relatedEvent, setRelatedEvent] = useState("");
+  const [description, setDescription] = useState("");
   const [duplicate, setDuplicate] = useState(false);
 
   const handleFile = (e) => {
@@ -26,9 +33,19 @@ function UploadEvidence() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    alert("Evidence saved successfully!");
-    navigate("/case/1");
-  };
+    const newEvidence = saveEvidence({
+      caseId: "1",
+      name: evidenceName,
+      type: evidenceType || "Photo",
+      date: evidenceDate,
+      personInvolved,
+      relatedEvent,
+      description,
+      fileName,
+  });
+
+  navigate(`/case/1/evidence/${newEvidence.id}`);
+};
 
   return (
     <>
@@ -81,6 +98,8 @@ function UploadEvidence() {
               <input
                 type="text"
                 className="form-control"
+                value={evidenceName}
+                onChange={(e) => setEvidenceName(e.target.value)}
                 placeholder="Enter evidence name"
                 required
               />
@@ -92,7 +111,11 @@ function UploadEvidence() {
                   Evidence Type
                 </label>
 
-                <select className="form-select">
+                <select 
+                  className="form-select"
+                  value={evidenceType}
+                  onChange={(e) => setEvidenceType(e.target.value)}
+                >
                   <option>Photo</option>
                   <option>Screenshot</option>
                   <option>Document</option>
@@ -110,6 +133,8 @@ function UploadEvidence() {
                 <input
                   type="date"
                   className="form-control"
+                  value={evidenceDate}
+                  onChange={(e) => setEvidenceDate(e.target.value)}
                   required
                 />
               </div>
@@ -123,6 +148,8 @@ function UploadEvidence() {
               <input
                 type="text"
                 className="form-control"
+                value={personInvolved}
+                onChange={(e) => setPersonInvolved(e.target.value)}
                 placeholder="Example: Landlord"
               />
             </div>
@@ -132,7 +159,11 @@ function UploadEvidence() {
                 Related Event
               </label>
 
-              <select className="form-select">
+              <select 
+                className="form-select"
+                value={relatedEvent}
+                onChange={(e) => setRelatedEvent(e.target.value)}
+              >
                 <option>No event selected</option>
                 <option>Initial Complaint</option>
                 <option>Property Damage</option>
@@ -147,6 +178,8 @@ function UploadEvidence() {
 
               <textarea
                 className="form-control"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 rows="4"
                 placeholder="Describe what this evidence shows..."
               />
