@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { getEvidence } from "../utils/evidenceStorage";
 
 function CaseDetails() {
+  const evidenceItems = getEvidence().filter(
+    (item) => String(item.caseId) === "1"
+  );
   return (
     <>
       <Navbar />
@@ -82,7 +86,7 @@ function CaseDetails() {
               </div>
 
               <div className="fs-3 fw-bold">
-                3
+                {evidenceItems.length}
               </div>
             </div>
           </div>
@@ -151,7 +155,26 @@ function CaseDetails() {
             </div>
           </div>
         </div>
+        {evidenceItems.map((item) => (
+          <div className="case-card mb-3" key={item.id}>
+            <div className="p-4">
+              <h5 className="fw-bold">{item.name}</h5>
 
+              <p className="text-muted">
+                {item.type} • {item.date}
+              </p>
+
+              <p>{item.description}</p>
+
+              <Link
+                to={`/case/${item.caseId}/evidence/${item.id}`}
+                className="btn btn-sm btn-outline-primary"
+              >
+                View
+              </Link>
+            </div>
+          </div>
+        ))}
         <div className="case-card mb-3">
           <div className="p-4">
             <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
@@ -170,9 +193,12 @@ function CaseDetails() {
               </div>
 
               <div className="d-flex gap-2 align-items-start">
-                <button className="btn btn-sm btn-outline-primary">
+                <Link
+                  to="/case/1/evidence/1"
+                  className="btn btn-sm btn-outline-primary"
+                >
                   View
-                </button>
+                </Link>
 
                 <button className="btn btn-sm btn-outline-secondary">
                   Edit
