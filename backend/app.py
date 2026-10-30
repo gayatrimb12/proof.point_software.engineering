@@ -14,6 +14,13 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
 
     import backend.models as models
+    from backend.routes import register_routes
+
+    register_routes(app)
+
+    @app.errorhandler(404)
+    def not_found(_err):
+        return jsonify({'error': 'Not found'}), 404
 
     @app.route('/api/health', methods=['GET'])
     def health_check():

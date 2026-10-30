@@ -7,6 +7,10 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+def _iso(value):
+    return value.isoformat() if value is not None else None
+
+
 event_evidence = db.Table(
     "event_evidence",
     db.Column("event_id", db.Integer, db.ForeignKey("timeline_events.id", ondelete="CASCADE"), primary_key=True),
@@ -41,6 +45,16 @@ class User(db.Model):
     @property
     def is_admin(self):
         return self.role == "admin"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role,
+            "is_active_account": self.is_active_account,
+            "created_at": _iso(self.created_at),
+        }
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -83,6 +97,26 @@ class Case(db.Model):
                 return m.role
         return None
 
+    def to_dict(self, include_members=False, include_evidence=False, include_timeline=False):
+        data = {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "category": self.category,
+            "created_at": _iso(self.created_at),
+            "updated_at": _iso(self.updated_at),
+            "evidence_count": len(self.evidence_items),
+            "timeline_event_count": len(self.timeline_events),
+            "member_count": len(self.members),
+        }
+        if include_members:
+            data["members"] = [m.to_dict() for m in self.members]
+        if include_evidence:
+            data["evidence"] = [e.to_dict() for e in self.evidence_items]
+        if include_timeline:
+            data["timeline_events"] = [t.to_dict() for t in self.timeline_events]
+        return data
+
     def __repr__(self):
         return f"<Case {self.title}>"
 
@@ -103,6 +137,16 @@ class CaseMember(db.Model):
 
     case = db.relationship("Case", back_populates="members")
     user = db.relationship("User", back_populates="memberships")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "case_id": self.case_id,
+            "user_id": self.user_id,
+            "username": self.user.username if self.user else None,
+            "role": self.role,
+            "added_at": _iso(self.added_at),
+        }
 
 
 class Evidence(db.Model):
@@ -126,6 +170,22 @@ class Evidence(db.Model):
         "TimelineEvent", secondary=event_evidence, back_populates="evidence_links"
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "case_id": self.case_id,
+            "uploaded_by": self.uploaded_by,
+            "title": self.title,
+            "description": self.description,
+            "evidence_type": self.evidence_type,
+            "file_path": self.file_path,
+            "file_hash": self.file_hash,
+            "linked_person": self.linked_person,
+            "date_assigned": _iso(self.date_assigned),
+            "created_at": _iso(self.created_at),
+            "event_ids": [e.id for e in self.linked_events],
+        }
+
     def __repr__(self):
         return f"<Evidence {self.title}>"
 
@@ -145,6 +205,21 @@ class TimelineEvent(db.Model):
     evidence_links = db.relationship(
         "Evidence", secondary=event_evidence, back_populates="linked_events"
     )
+
+    def to_dict(self, include_evidence=False):
+        data = {
+            "id": self.id,
+            "case_id": self.case_id,
+            "title": self.title,
+            "description": self.description,
+            "event_date": _iso(self.event_date),
+            "order_index": self.order_index,
+            "created_at": _iso(self.created_at),
+            "evidence_ids": [e.id for e in self.evidence_links],
+        }
+        if include_evidence:
+            data["evidence"] = [e.to_dict() for e in self.evidence_links]
+        return data
 
     def __repr__(self):
         return f"<TimelineEvent {self.title}>"
