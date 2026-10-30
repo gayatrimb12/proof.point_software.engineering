@@ -1,7 +1,7 @@
 import os
 from flask import Flask, jsonify
-from config import Config
-from extensions import db, migrate
+from backend.config import Config
+from backend.extensions import db, migrate
 
 
 def create_app(config_class=Config):
@@ -13,7 +13,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    import models
+    import backend.models as models
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
