@@ -10,35 +10,41 @@ function CreateCase() {
   const [status, setStatus] = useState("Active");
   const [description, setDescription] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const [error, setError] = useState("");
 
-    const storedCases =
-      JSON.parse(
-        localStorage.getItem("proofpointCases")
-      ) || [];
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (!title.trim()) {
+      setError("Please enter a case title.");
+      return;
+    }
+
+    if (!category) {
+      setError("Please select a category.");
+      return;
+    }
+
+    setError("");
+
+    const savedCases =
+      JSON.parse(localStorage.getItem("proofpointCases")) || [];
 
     const newCase = {
       id: Date.now(),
-      title,
+      title: title.trim(),
       category,
       status,
-      description,
+      description: description.trim(),
       evidenceCount: 0,
-      updated: new Date().toLocaleDateString(
-        "en-US",
-        {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }
-      ),
+      updated: new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
     };
 
-    const updatedCases = [
-      ...storedCases,
-      newCase,
-    ];
+    const updatedCases = [...savedCases, newCase];
 
     localStorage.setItem(
       "proofpointCases",
@@ -53,10 +59,7 @@ function CreateCase() {
       <Navbar />
 
       <main className="page-shell">
-        <div
-          className="card shadow-sm border-0 p-4 p-md-5 mx-auto"
-          style={{ maxWidth: "820px" }}
-        >
+        <div className="mb-4">
           <div className="section-label mb-2">
             Case Management
           </div>
@@ -65,110 +68,141 @@ function CreateCase() {
             Create New Case
           </h1>
 
-          <p className="page-subtitle mb-4">
-            Add the basic information for the issue you want to track.
+          <p className="page-subtitle">
+            Add the basic information for your case.
+            Evidence and timeline events can be added later.
           </p>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label fw-semibold">
-                Case Name
-              </label>
+        <div className="proof-card mx-auto">
+          <div className="case-card-top" />
 
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Example: Apartment Water Damage"
-                value={title}
-                onChange={(e) =>
-                  setTitle(e.target.value)
-                }
-                required
-              />
-            </div>
+          <div className="p-4 p-md-5">
+            {error && (
+              <div className="alert alert-danger">
+                {error}
+              </div>
+            )}
 
-            <div className="row">
-              <div className="col-md-7 mb-3">
+            <form onSubmit={handleSubmit}>
+              <div className="mb-3">
                 <label className="form-label fw-semibold">
-                  Category
+                  Case Title
                 </label>
 
-                <select
-                  className="form-select"
-                  value={category}
-                  onChange={(e) =>
-                    setCategory(e.target.value)
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Example: Apartment Dispute"
+                  value={title}
+                  onChange={(event) =>
+                    setTitle(event.target.value)
                   }
-                  required
-                >
-                  <option value="">
-                    Select category...
-                  </option>
-
-                  <option>Housing</option>
-                  <option>Product Issue</option>
-                  <option>Property Damage</option>
-                  <option>Online Harassment</option>
-                  <option>Refund Dispute</option>
-                  <option>Other</option>
-                </select>
+                />
               </div>
 
-              <div className="col-md-5 mb-3">
+              <div className="row g-3 mb-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">
+                    Category
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={category}
+                    onChange={(event) =>
+                      setCategory(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Select Category
+                    </option>
+
+                    <option value="Housing">
+                      Housing
+                    </option>
+
+                    <option value="Product Issue">
+                      Product Issue
+                    </option>
+
+                    <option value="Employment">
+                      Employment
+                    </option>
+
+                    <option value="Insurance">
+                      Insurance
+                    </option>
+
+                    <option value="Other">
+                      Other
+                    </option>
+                  </select>
+                </div>
+
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">
+                    Status
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={status}
+                    onChange={(event) =>
+                      setStatus(event.target.value)
+                    }
+                  >
+                    <option value="Active">
+                      Active
+                    </option>
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Closed">
+                      Closed
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-4">
                 <label className="form-label fw-semibold">
-                  Status
+                  Description
                 </label>
 
-                <select
-                  className="form-select"
-                  value={status}
-                  onChange={(e) =>
-                    setStatus(e.target.value)
+                <textarea
+                  className="form-control"
+                  rows="5"
+                  placeholder="Briefly describe what this case is about..."
+                  value={description}
+                  onChange={(event) =>
+                    setDescription(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="d-flex flex-column flex-sm-row gap-2">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                >
+                  Create Case
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() =>
+                    navigate("/dashboard")
                   }
                 >
-                  <option>Active</option>
-                  <option>Pending</option>
-                  <option>Closed</option>
-                </select>
+                  Cancel
+                </button>
               </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="form-label fw-semibold">
-                Description
-              </label>
-
-              <textarea
-                className="form-control"
-                rows="5"
-                placeholder="Describe what happened and what this case is about..."
-                value={description}
-                onChange={(e) =>
-                  setDescription(e.target.value)
-                }
-                required
-              />
-            </div>
-
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
-                className="btn btn-light px-4"
-                onClick={() =>
-                  navigate("/dashboard")
-                }
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="btn btn-primary px-4"
-              >
-                Create Case
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </main>
     </>
