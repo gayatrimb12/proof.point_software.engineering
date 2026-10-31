@@ -1,6 +1,10 @@
 
 import { test, expect, vi } from "vitest";
-import { saveEvidence, getEvidenceById } from "../utils/evidenceStorage";
+import {
+  saveEvidence,
+  getEvidenceById,
+  updateEvidence,
+} from "../utils/evidenceStorage";
 
 // Test 1: Check that evidence saves correctly
 test("saves evidence information correctly", () => {
@@ -57,6 +61,39 @@ test("finds saved evidence using its ID", () => {
 
     expect(foundEvidence).toEqual(evidence);
     expect(getEvidenceById("2", evidence.id)).toBeUndefined();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+// Test 3: Check that evidence editing works correctly
+test("updates evidence information correctly", () => {
+  const storage = {};
+
+  vi.stubGlobal("localStorage", {
+    getItem: (key) => storage[key] ?? null,
+    setItem: (key, value) => {
+      storage[key] = value;
+    },
+  });
+
+  try {
+    const evidence = saveEvidence({
+      caseId: "1",
+      name: "Original Photo",
+      type: "Photo",
+      description: "Original description",
+    });
+
+    updateEvidence("1", evidence.id, {
+      name: "Updated Photo",
+      description: "Updated description",
+    });
+
+    const updated = getEvidenceById("1", evidence.id);
+
+    expect(updated.name).toBe("Updated Photo");
+    expect(updated.description).toBe("Updated description");
   } finally {
     vi.unstubAllGlobals();
   }

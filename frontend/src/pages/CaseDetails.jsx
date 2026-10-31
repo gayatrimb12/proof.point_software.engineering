@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getEvidence } from "../utils/evidenceStorage";
+import { sortEvidence } from "../utils/evidenceSorting";
 
 function CaseDetails() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -450,18 +451,16 @@ function CaseDetails() {
         </div>
 
         {/* Evidence added through the upload/evidence storage feature */}
-        {evidenceItems
-          .filter((item) =>
-            (item.name || "").toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          .filter((item) =>
-            selectedType === "All Types" || item.type === selectedType
-          )
-          .sort((a, b) =>
-            sortOrder === "Newest First"
-              ? (b.date || "").localeCompare(a.date || "")
-              : (a.date || "").localeCompare(b.date || "")
-          )
+        {sortEvidence(
+          evidenceItems
+            .filter((item) =>
+              (item.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .filter((item) =>
+              selectedType === "All Types" || item.type === selectedType
+            ),
+          sortOrder
+        )
           .map((item) => (
 
           <div
