@@ -4,6 +4,9 @@ import Navbar from "../components/Navbar";
 import { getEvidence } from "../utils/evidenceStorage";
 
 function CaseDetails() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("All Types");
+  const [sortOrder, setSortOrder] = useState("Newest First");
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -410,11 +413,20 @@ function CaseDetails() {
               <input
                 className="form-control"
                 placeholder="Search evidence..."
+                value={searchTerm}
+                onChange={(event) =>
+                  setSearchTerm(event.target.value)
+                }
               />
             </div>
 
             <div className="col-md-3">
-              <select className="form-select">
+              <select className="form-select"
+                value={selectedType}
+                onChange={(event) =>
+                  setSelectedType(event.target.value)
+                }
+              >
                 <option>All Types</option>
                 <option>Photo</option>
                 <option>Document</option>
@@ -424,7 +436,12 @@ function CaseDetails() {
             </div>
 
             <div className="col-md-3">
-              <select className="form-select">
+              <select className="form-select"
+                value={sortOrder}
+                onChange={(event) =>
+                  setSortOrder(event.target.value)
+                }
+              >
                 <option>Newest First</option>
                 <option>Oldest First</option>
               </select>
@@ -433,7 +450,20 @@ function CaseDetails() {
         </div>
 
         {/* Evidence added through the upload/evidence storage feature */}
-        {evidenceItems.map((item) => (
+        {evidenceItems
+          .filter((item) =>
+            (item.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          .filter((item) =>
+            selectedType === "All Types" || item.type === selectedType
+          )
+          .sort((a, b) =>
+            sortOrder === "Newest First"
+              ? (b.date || "").localeCompare(a.date || "")
+              : (a.date || "").localeCompare(b.date || "")
+          )
+          .map((item) => (
+
           <div
             className="case-card mb-3"
             key={item.id}

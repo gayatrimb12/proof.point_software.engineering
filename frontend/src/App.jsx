@@ -9,6 +9,7 @@ import UploadEvidence from "./pages/UploadEvidence";
 import Timeline from "./pages/Timeline";
 import ShareCase from "./pages/ShareCase";
 import EvidenceDetails from "./pages/EvidenceDetails";
+import EditEvidence from "./pages/EditEvidence";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
       <Route path="/case/:id/timeline" element={<Timeline />} />
       <Route path="/case/:id/share" element={<ShareCase />} />
       <Route path="/case/:id/evidence/:evidenceId" element={<EvidenceDetails />} />
+      <Route path="/case/:id/evidence/:evidenceId/edit" element={<EditEvidence />} />
     </Routes>
   );
 }
