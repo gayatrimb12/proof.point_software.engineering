@@ -29,6 +29,13 @@ function EvidenceDetails() {
             <div className="section-label mb-3">
               Evidence ID: {evidenceId}
             </div>
+            
+            <Link
+              to={`/case/${id}/evidence/${evidenceId}/edit`}
+              className="btn btn-outline-secondary mb-3"
+            >
+              Edit Evidence
+            </Link> 
 
             <div className="mb-3">
               <strong>Evidence Name:</strong> {evidence?.name || "Not available"}
