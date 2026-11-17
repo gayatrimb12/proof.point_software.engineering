@@ -60,13 +60,21 @@ class User(db.Model):
         return f"<User {self.username}>"
 
 
+CASE_STATUSES = ("Active", "Pending", "Closed")
+MEMBER_ROLES = ("owner", "editor", "viewer")
+
+
 class Case(db.Model):
     __tablename__ = "cases"
+    __table_args__ = (
+        db.CheckConstraint("status IN ('Active', 'Pending', 'Closed')", name="ck_cases_status"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(50), nullable=False, default="General")
+    status = db.Column(db.String(20), nullable=False, default="Active")
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -89,7 +97,7 @@ class Case(db.Model):
 
     @property
     def collaborators(self):
-        return [m.user for m in self.members if m.role == "collaborator"]
+        return [m.user for m in self.members if m.role in ("editor", "viewer")]
 
     def user_role(self, user):
         for m in self.members:
@@ -103,6 +111,7 @@ class Case(db.Model):
             "title": self.title,
             "description": self.description,
             "category": self.category,
+            "status": self.status,
             "created_at": _iso(self.created_at),
             "updated_at": _iso(self.updated_at),
             "evidence_count": len(self.evidence_items),
@@ -126,13 +135,13 @@ class CaseMember(db.Model):
     __tablename__ = "case_members"
     __table_args__ = (
         db.UniqueConstraint("case_id", "user_id", name="uq_case_members_case_user"),
-        db.CheckConstraint("role IN ('owner', 'collaborator')", name="ck_case_members_role"),
+        db.CheckConstraint("role IN ('owner', 'editor', 'viewer')", name="ck_case_members_role"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
     case_id = db.Column(db.Integer, db.ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    role = db.Column(db.String(20), nullable=False, default="collaborator")
+    role = db.Column(db.String(20), nullable=False, default="viewer")
     added_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     case = db.relationship("Case", back_populates="members")
@@ -144,6 +153,7 @@ class CaseMember(db.Model):
             "case_id": self.case_id,
             "user_id": self.user_id,
             "username": self.user.username if self.user else None,
+            "email": self.user.email if self.user else None,
             "role": self.role,
             "added_at": _iso(self.added_at),
         }
@@ -159,6 +169,8 @@ class Evidence(db.Model):
     description = db.Column(db.Text)
     evidence_type = db.Column(db.String(50), nullable=False)
     file_path = db.Column(db.String(255))
+    original_filename = db.Column(db.String(255))
+    mime_type = db.Column(db.String(100))
     file_hash = db.Column(db.String(64), index=True)
     linked_person = db.Column(db.String(120))
     date_assigned = db.Column(db.DateTime)
@@ -179,6 +191,9 @@ class Evidence(db.Model):
             "description": self.description,
             "evidence_type": self.evidence_type,
             "file_path": self.file_path,
+            "original_filename": self.original_filename,
+            "mime_type": self.mime_type,
+            "file_url": f"/api/evidence/{self.id}/file" if self.file_path else None,
             "file_hash": self.file_hash,
             "linked_person": self.linked_person,
             "date_assigned": _iso(self.date_assigned),

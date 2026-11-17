@@ -44,7 +44,7 @@ def seed_database(reset=False):
 
     db.session.add_all([
         CaseMember(case_id=apartment.id, user_id=alice.id, role="owner"),
-        CaseMember(case_id=apartment.id, user_id=bob.id, role="collaborator"),
+        CaseMember(case_id=apartment.id, user_id=bob.id, role="editor"),
         CaseMember(case_id=package.id, user_id=bob.id, role="owner"),
     ])
 

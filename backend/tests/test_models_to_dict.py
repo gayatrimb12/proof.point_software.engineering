@@ -19,7 +19,7 @@ def test_case_and_evidence_to_dict_shape(seeded_app):
     assert data["evidence_count"] == 3
     assert data["timeline_event_count"] == 3
     assert data["member_count"] == 2
-    assert {m["role"] for m in data["members"]} == {"owner", "collaborator"}
+    assert {m["role"] for m in data["members"]} == {"owner", "editor"}
     assert [t["order_index"] for t in data["timeline_events"]] == [0, 1, 2]
     assert isinstance(data["created_at"], str)
 
