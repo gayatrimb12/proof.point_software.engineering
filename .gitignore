@@ -6,3 +6,6 @@ __pycache__/
 instance/
 backend/instance/
 .env
+
+# uploaded evidence files
+backend/uploads/

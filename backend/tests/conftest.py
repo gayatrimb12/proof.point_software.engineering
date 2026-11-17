@@ -11,8 +11,11 @@ class TestConfig(Config):
 
 
 @pytest.fixture
-def app():
-    app = create_app(TestConfig)
+def app(tmp_path):
+    class PerTestConfig(TestConfig):
+        UPLOAD_FOLDER = str(tmp_path / "uploads")
+
+    app = create_app(PerTestConfig)
     with app.app_context():
         db.create_all()
         yield app
@@ -35,3 +38,15 @@ def seeded_app(app):
 @pytest.fixture
 def seeded_client(seeded_app):
     return seeded_app.test_client()
+
+
+@pytest.fixture
+def login():
+    from backend.seed import DEMO_PASSWORD
+
+    def _login(client, username="alice", password=DEMO_PASSWORD):
+        res = client.post("/api/auth/login", json={"email": f"{username}@proofpoint.dev", "password": password})
+        assert res.status_code == 200, res.get_json()
+        return res
+
+    return _login
