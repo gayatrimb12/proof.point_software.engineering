@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { createCase } from "../utils/api";
 
 function CreateCase() {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [status, setStatus] = useState("Active");
   const [description, setDescription] = useState("");
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!title.trim()) {
@@ -25,33 +26,29 @@ function CreateCase() {
       return;
     }
 
-    setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-    const savedCases =
-      JSON.parse(localStorage.getItem("proofpointCases")) || [];
+      const result = await createCase({
+        title: title.trim(),
+        category,
+        description: description.trim(),
+      });
 
-    const newCase = {
-      id: Date.now(),
-      title: title.trim(),
-      category,
-      status,
-      description: description.trim(),
-      evidenceCount: 0,
-      updated: new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
+      const createdCase =
+        result.case || result;
 
-    const updatedCases = [...savedCases, newCase];
-
-    localStorage.setItem(
-      "proofpointCases",
-      JSON.stringify(updatedCases)
-    );
-
-    navigate("/dashboard");
+      if (createdCase?.id) {
+        navigate(`/case/${createdCase.id}`);
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,73 +95,47 @@ function CreateCase() {
                   onChange={(event) =>
                     setTitle(event.target.value)
                   }
+                  required
                 />
               </div>
 
-              <div className="row g-3 mb-3">
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">
-                    Category
-                  </label>
+              <div className="mb-3">
+                <label className="form-label fw-semibold">
+                  Category
+                </label>
 
-                  <select
-                    className="form-select"
-                    value={category}
-                    onChange={(event) =>
-                      setCategory(event.target.value)
-                    }
-                  >
-                    <option value="">
-                      Select Category
-                    </option>
+                <select
+                  className="form-select"
+                  value={category}
+                  onChange={(event) =>
+                    setCategory(event.target.value)
+                  }
+                  required
+                >
+                  <option value="">
+                    Select Category
+                  </option>
 
-                    <option value="Housing">
-                      Housing
-                    </option>
+                  <option value="Housing">
+                    Housing
+                  </option>
 
-                    <option value="Product Issue">
-                      Product Issue
-                    </option>
+                  <option value="Product Issue">
+                    Product Issue
+                  </option>
 
-                    <option value="Employment">
-                      Employment
-                    </option>
+                  <option value="Employment">
+                    Employment
+                  </option>
 
-                    <option value="Insurance">
-                      Insurance
-                    </option>
+                  <option value="Insurance">
+                    Insurance
+                  </option>
 
-                    <option value="Other">
-                      Other
-                    </option>
-                  </select>
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">
-                    Status
-                  </label>
-
-                  <select
-                    className="form-select"
-                    value={status}
-                    onChange={(event) =>
-                      setStatus(event.target.value)
-                    }
-                  >
-                    <option value="Active">
-                      Active
-                    </option>
-
-                    <option value="Pending">
-                      Pending
-                    </option>
-
-                    <option value="Closed">
-                      Closed
-                    </option>
-                  </select>
-                </div>
+                  <option value="Other">
+                    Other
+                  </option>
+                </select>
               </div>
 
               <div className="mb-4">
@@ -187,8 +158,11 @@ function CreateCase() {
                 <button
                   type="submit"
                   className="btn btn-primary"
+                  disabled={loading}
                 >
-                  Create Case
+                  {loading
+                    ? "Creating..."
+                    : "Create Case"}
                 </button>
 
                 <button
@@ -197,6 +171,7 @@ function CreateCase() {
                   onClick={() =>
                     navigate("/dashboard")
                   }
+                  disabled={loading}
                 >
                   Cancel
                 </button>

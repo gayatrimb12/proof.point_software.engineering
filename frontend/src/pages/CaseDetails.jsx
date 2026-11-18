@@ -1,99 +1,123 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import Navbar from "../components/Navbar";
-import { getEvidence } from "../utils/evidenceStorage";
-import { sortEvidence } from "../utils/evidenceSorting";
+
+import {
+  deleteCase,
+  getCaseById,
+  getCaseEvidence,
+  getCaseTimeline,
+  updateCase,
+} from "../utils/api";
 
 function CaseDetails() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState("All Types");
-  const [sortOrder, setSortOrder] = useState("Newest First");
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Evidence added by the evidence management feature.
-  // Use the current case ID instead of hardcoding case 1.
-  const evidenceItems = getEvidence().filter(
-    (item) => String(item.caseId) === String(id)
-  );
-
   const [caseData, setCaseData] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [evidenceItems, setEvidenceItems] = useState([]);
+  const [timelineEvents, setTimelineEvents] = useState([]);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] =
+    useState("All Types");
+  const [sortOrder, setSortOrder] =
+    useState("Newest First");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState("");
-  const [editStatus, setEditStatus] = useState("");
-  const [editDescription, setEditDescription] = useState("");
+  const [editDescription, setEditDescription] =
+    useState("");
+
+  const loadCaseData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [
+        caseResponse,
+        evidenceResponse,
+        timelineResponse,
+      ] = await Promise.all([
+        getCaseById(id),
+        getCaseEvidence(id),
+        getCaseTimeline(id),
+      ]);
+
+      const loadedCase =
+        caseResponse.case || caseResponse;
+
+      const loadedEvidence =
+        evidenceResponse.evidence ||
+        evidenceResponse.items ||
+        (Array.isArray(evidenceResponse)
+          ? evidenceResponse
+          : []);
+
+      const loadedTimeline =
+        timelineResponse.timeline_events ||
+        timelineResponse.events ||
+        (Array.isArray(timelineResponse)
+          ? timelineResponse
+          : []);
+
+      setCaseData(loadedCase);
+      setEvidenceItems(loadedEvidence);
+      setTimelineEvents(loadedTimeline);
+
+      setEditTitle(loadedCase.title || "");
+      setEditCategory(loadedCase.category || "");
+      setEditDescription(
+        loadedCase.description || ""
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const savedCases =
-      JSON.parse(localStorage.getItem("proofpointCases")) || [];
-
-    const selectedCase = savedCases.find(
-      (item) => String(item.id) === String(id)
-    );
-
-    if (selectedCase) {
-      setCaseData(selectedCase);
-      setEditTitle(selectedCase.title || "");
-      setEditCategory(selectedCase.category || "");
-      setEditStatus(selectedCase.status || "Active");
-      setEditDescription(selectedCase.description || "");
-    }
+    loadCaseData();
   }, [id]);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditTitle(caseData.title || "");
-    setEditCategory(caseData.category || "");
-    setEditStatus(caseData.status || "Active");
-    setEditDescription(caseData.description || "");
-    setIsEditing(false);
-  };
-
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     event.preventDefault();
 
     if (!editTitle.trim() || !editCategory.trim()) {
-      alert("Please enter a case title and category.");
+      setError(
+        "Please enter a case title and category."
+      );
       return;
     }
 
-    const savedCases =
-      JSON.parse(localStorage.getItem("proofpointCases")) || [];
+    try {
+      setError("");
 
-    const updatedCase = {
-      ...caseData,
-      title: editTitle,
-      category: editCategory,
-      status: editStatus,
-      description: editDescription,
-      updated: new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
+      await updateCase(id, {
+        title: editTitle.trim(),
+        category: editCategory,
+        description: editDescription.trim(),
+      });
 
-    const updatedCases = savedCases.map((item) =>
-      String(item.id) === String(id) ? updatedCase : item
-    );
+      await loadCaseData();
 
-    localStorage.setItem(
-      "proofpointCases",
-      JSON.stringify(updatedCases)
-    );
-
-    setCaseData(updatedCase);
-    setIsEditing(false);
-
-    alert("Case updated successfully.");
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this case? This action cannot be undone."
     );
@@ -102,20 +126,105 @@ function CaseDetails() {
       return;
     }
 
-    const savedCases =
-      JSON.parse(localStorage.getItem("proofpointCases")) || [];
-
-    const remainingCases = savedCases.filter(
-      (item) => String(item.id) !== String(id)
-    );
-
-    localStorage.setItem(
-      "proofpointCases",
-      JSON.stringify(remainingCases)
-    );
-
-    navigate("/dashboard");
+    try {
+      await deleteCase(id);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    }
   };
+
+  const normalizedEvidence = evidenceItems.map(
+    (item) => ({
+      ...item,
+      name: item.title || item.name || "Untitled Evidence",
+      type:
+        item.evidence_type ||
+        item.type ||
+        "Other",
+      date:
+        item.date_assigned ||
+        item.date ||
+        item.created_at,
+    })
+  );
+
+  const filteredEvidence = normalizedEvidence
+    .filter((item) => {
+      const matchesSearch =
+        item.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+      const matchesType =
+        selectedType === "All Types" ||
+        item.type === selectedType;
+
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      const first = new Date(a.date || 0);
+      const second = new Date(b.date || 0);
+
+      return sortOrder === "Newest First"
+        ? second - first
+        : first - second;
+    });
+
+  const missingEvidenceEvents =
+    timelineEvents.filter((event) => {
+      const evidenceIds =
+        event.evidence_ids || [];
+
+      return evidenceIds.length === 0;
+    });
+
+  const supportedEvents =
+    timelineEvents.length -
+    missingEvidenceEvents.length;
+
+  const completeness =
+    timelineEvents.length === 0
+      ? 0
+      : Math.round(
+          (supportedEvents /
+            timelineEvents.length) *
+            100
+        );
+
+  const formatDate = (date) => {
+    if (!date) {
+      return "No date";
+    }
+
+    return new Date(date).toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+
+        <main className="page-shell text-center">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+          />
+
+          <p className="text-muted mt-3">
+            Loading case...
+          </p>
+        </main>
+      </>
+    );
+  }
 
   if (!caseData) {
     return (
@@ -124,12 +233,16 @@ function CaseDetails() {
 
         <main className="page-shell">
           <div className="case-card">
-            <div className="p-4 text-center">
-              <h2 className="fw-bold">Case not found</h2>
+            <div className="p-5 text-center">
+              <h2 className="fw-bold">
+                Case not found
+              </h2>
 
-              <p className="text-muted">
-                This case may have been deleted or does not exist.
-              </p>
+              {error && (
+                <p className="text-danger">
+                  {error}
+                </p>
+              )}
 
               <Link
                 to="/dashboard"
@@ -149,6 +262,11 @@ function CaseDetails() {
       <Navbar />
 
       <main className="page-shell">
+        {error && (
+          <div className="alert alert-danger">
+            {error}
+          </div>
+        )}
 
         {isEditing ? (
           <div className="case-card mb-4">
@@ -170,79 +288,51 @@ function CaseDetails() {
                   </label>
 
                   <input
-                    type="text"
                     className="form-control"
                     value={editTitle}
                     onChange={(event) =>
-                      setEditTitle(event.target.value)
+                      setEditTitle(
+                        event.target.value
+                      )
                     }
+                    required
                   />
                 </div>
 
-                <div className="row g-3 mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Category
-                    </label>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">
+                    Category
+                  </label>
 
-                    <select
-                      className="form-select"
-                      value={editCategory}
-                      onChange={(event) =>
-                        setEditCategory(event.target.value)
-                      }
-                    >
-                      <option value="">
-                        Select Category
-                      </option>
+                  <select
+                    className="form-select"
+                    value={editCategory}
+                    onChange={(event) =>
+                      setEditCategory(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="Housing">
+                      Housing
+                    </option>
 
-                      <option value="Housing">
-                        Housing
-                      </option>
+                    <option value="Product Issue">
+                      Product Issue
+                    </option>
 
-                      <option value="Product Issue">
-                        Product Issue
-                      </option>
+                    <option value="Employment">
+                      Employment
+                    </option>
 
-                      <option value="Employment">
-                        Employment
-                      </option>
+                    <option value="Insurance">
+                      Insurance
+                    </option>
 
-                      <option value="Insurance">
-                        Insurance
-                      </option>
-
-                      <option value="Other">
-                        Other
-                      </option>
-                    </select>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Status
-                    </label>
-
-                    <select
-                      className="form-select"
-                      value={editStatus}
-                      onChange={(event) =>
-                        setEditStatus(event.target.value)
-                      }
-                    >
-                      <option value="Active">
-                        Active
-                      </option>
-
-                      <option value="Pending">
-                        Pending
-                      </option>
-
-                      <option value="Closed">
-                        Closed
-                      </option>
-                    </select>
-                  </div>
+                    <option value="Other">
+                      Other
+                    </option>
+                  </select>
                 </div>
 
                 <div className="mb-4">
@@ -255,9 +345,10 @@ function CaseDetails() {
                     rows="4"
                     value={editDescription}
                     onChange={(event) =>
-                      setEditDescription(event.target.value)
+                      setEditDescription(
+                        event.target.value
+                      )
                     }
-                    placeholder="Enter case description"
                   />
                 </div>
 
@@ -272,7 +363,9 @@ function CaseDetails() {
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    onClick={handleCancel}
+                    onClick={() =>
+                      setIsEditing(false)
+                    }
                   >
                     Cancel
                   </button>
@@ -288,24 +381,20 @@ function CaseDetails() {
                   Case Overview
                 </div>
 
-                <div className="d-flex align-items-center gap-3">
-                  <h1 className="page-title mb-0">
-                    {caseData.title}
-                  </h1>
+                <h1 className="page-title mb-1">
+                  {caseData.title}
+                </h1>
 
-                  <span className="status-pill">
-                    {caseData.status || "Active"}
-                  </span>
-                </div>
-
-                <p className="page-subtitle mt-2 mb-0">
+                <p className="page-subtitle mb-0">
                   {caseData.category}
                 </p>
               </div>
 
               <button
                 className="btn btn-outline-secondary"
-                onClick={handleEdit}
+                onClick={() =>
+                  setIsEditing(true)
+                }
               >
                 Edit Case
               </button>
@@ -359,8 +448,8 @@ function CaseDetails() {
         </div>
 
         <div className="row g-3 mb-4">
-          <div className="col-md-4">
-            <div className="stat-box">
+          <div className="col-md-3">
+            <div className="stat-box h-100">
               <div className="section-label">
                 Evidence Items
               </div>
@@ -371,41 +460,89 @@ function CaseDetails() {
             </div>
           </div>
 
-          <div className="col-md-4">
-            <div className="stat-box">
+          <div className="col-md-3">
+            <div className="stat-box h-100">
               <div className="section-label">
                 Timeline Events
               </div>
 
               <div className="fs-3 fw-bold">
-                3
+                {timelineEvents.length}
               </div>
             </div>
           </div>
 
-          <div className="col-md-4">
-            <div className="stat-box">
+          <div className="col-md-3">
+            <div className="stat-box h-100">
               <div className="section-label">
                 Missing Evidence
               </div>
 
-              <div className="fs-3 fw-bold text-danger">
-                1
+              <div
+                className={`fs-3 fw-bold ${
+                  missingEvidenceEvents.length > 0
+                    ? "text-danger"
+                    : "text-success"
+                }`}
+              >
+                {missingEvidenceEvents.length}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-3">
+            <div className="stat-box h-100">
+              <div className="section-label">
+                Case Completeness
+              </div>
+
+              <div className="fs-3 fw-bold">
+                {completeness}%
               </div>
             </div>
           </div>
         </div>
 
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <div className="section-label">
-              Evidence
+        <div className="case-card mb-4">
+          <div className="p-4">
+            <div className="d-flex justify-content-between mb-2">
+              <strong>Case Health</strong>
+
+              <span>{completeness}% complete</span>
             </div>
 
-            <h2 className="h4 fw-bold mb-0">
-              Case Evidence
-            </h2>
+            <div
+              className="progress"
+              style={{ height: "10px" }}
+            >
+              <div
+                className="progress-bar"
+                style={{
+                  width: `${completeness}%`,
+                }}
+              />
+            </div>
+
+            <small className="text-muted d-block mt-2">
+              {missingEvidenceEvents.length === 0
+                ? "Every timeline event has supporting evidence."
+                : `${missingEvidenceEvents.length} timeline event${
+                    missingEvidenceEvents.length === 1
+                      ? ""
+                      : "s"
+                  } still need supporting evidence.`}
+            </small>
           </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="section-label">
+            Evidence
+          </div>
+
+          <h2 className="h4 fw-bold mb-0">
+            Case Evidence
+          </h2>
         </div>
 
         <div className="search-panel mb-4">
@@ -416,31 +553,40 @@ function CaseDetails() {
                 placeholder="Search evidence..."
                 value={searchTerm}
                 onChange={(event) =>
-                  setSearchTerm(event.target.value)
+                  setSearchTerm(
+                    event.target.value
+                  )
                 }
               />
             </div>
 
             <div className="col-md-3">
-              <select className="form-select"
+              <select
+                className="form-select"
                 value={selectedType}
                 onChange={(event) =>
-                  setSelectedType(event.target.value)
+                  setSelectedType(
+                    event.target.value
+                  )
                 }
               >
                 <option>All Types</option>
-                <option>Photo</option>
+                <option>Image</option>
                 <option>Document</option>
+                <option>Photo</option>
                 <option>Screenshot</option>
                 <option>Receipt</option>
               </select>
             </div>
 
             <div className="col-md-3">
-              <select className="form-select"
+              <select
+                className="form-select"
                 value={sortOrder}
                 onChange={(event) =>
-                  setSortOrder(event.target.value)
+                  setSortOrder(
+                    event.target.value
+                  )
                 }
               >
                 <option>Newest First</option>
@@ -450,159 +596,133 @@ function CaseDetails() {
           </div>
         </div>
 
-        {/* Evidence added through the upload/evidence storage feature */}
-        {sortEvidence(
-          evidenceItems
-            .filter((item) =>
-              (item.name || "").toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .filter((item) =>
-              selectedType === "All Types" || item.type === selectedType
-            ),
-          sortOrder
-        )
-          .map((item) => (
+        {filteredEvidence.length === 0 ? (
+          <div className="case-card">
+            <div className="p-5 text-center">
+              <h5 className="fw-bold">
+                No evidence found
+              </h5>
 
-          <div
-            className="case-card mb-3"
-            key={item.id}
-          >
-            <div className="p-4">
-              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                <div>
-                  <div className="section-label mb-1">
-                    {item.type} • {item.date}
+              <p className="text-muted mb-3">
+                Upload evidence to start building this case.
+              </p>
+
+              <Link
+                to={`/case/${id}/upload`}
+                className="btn btn-primary"
+              >
+                Upload Evidence
+              </Link>
+            </div>
+          </div>
+        ) : (
+          filteredEvidence.map((item) => (
+            <div
+              className="case-card mb-3"
+              key={item.id}
+            >
+              <div className="p-4">
+                <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                  <div>
+                    <div className="section-label mb-1">
+                      {item.type} •{" "}
+                      {formatDate(item.date)}
+                    </div>
+
+                    <h5 className="fw-bold">
+                      {item.name}
+                    </h5>
+
+                    <p className="text-muted mb-0">
+                      {item.description ||
+                        "No description added."}
+                    </p>
                   </div>
 
-                  <h5 className="fw-bold">
-                    {item.name}
-                  </h5>
-
-                  <p className="text-muted mb-0">
-                    {item.description}
-                  </p>
-                </div>
-
-                <div className="d-flex gap-2 align-items-start">
-                  <Link
-                    to={`/case/${item.caseId}/evidence/${item.id}`}
-                    className="btn btn-sm btn-outline-primary"
-                  >
-                    View
-                  </Link>
+                  <div>
+                    <Link
+                      to={`/case/${id}/evidence/${item.id}`}
+                      className="btn btn-sm btn-outline-primary"
+                    >
+                      View
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
-        {/* Existing sample evidence */}
-        <div className="case-card mb-3">
+        <div className="case-card mt-4">
           <div className="p-4">
-            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-              <div>
-                <div className="section-label mb-1">
-                  Photo • August 6
-                </div>
-
-                <h5 className="fw-bold">
-                  Photo of Damage.jpg
-                </h5>
-
-                <p className="text-muted mb-0">
-                  Photo showing damage in the apartment.
-                </p>
-              </div>
-
-              <div className="d-flex gap-2 align-items-start">
-                <Link
-                  to="/case/1/evidence/1"
-                  className="btn btn-sm btn-outline-primary"
-                >
-                  View
-                </Link>
-
-                <button className="btn btn-sm btn-outline-secondary">
-                  Edit
-                </button>
-
-                <button className="btn btn-sm btn-outline-danger">
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="case-card mb-4">
-          <div className="p-4">
-            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-              <div>
-                <div className="section-label mb-1">
-                  Document • August 8
-                </div>
-
-                <h5 className="fw-bold">
-                  Repair Request.pdf
-                </h5>
-
-                <p className="text-muted mb-0">
-                  Email requesting maintenance assistance.
-                </p>
-              </div>
-
-              <div className="d-flex gap-2 align-items-start">
-                <button className="btn btn-sm btn-outline-primary">
-                  View
-                </button>
-
-                <button className="btn btn-sm btn-outline-secondary">
-                  Edit
-                </button>
-
-                <button className="btn btn-sm btn-outline-danger">
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="case-card">
-          <div className="p-4">
-            <div className="section-label mb-2">
+            <div className="section-label mb-3">
               Timeline Preview
             </div>
 
-            <div className="border-start border-3 border-primary ps-3 mb-3">
-              <strong>
-                August 3 — Initial Complaint
-              </strong>
+            {timelineEvents.length === 0 ? (
+              <p className="text-muted mb-0">
+                No timeline events yet.
+              </p>
+            ) : (
+              timelineEvents
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.event_date) -
+                    new Date(b.event_date)
+                )
+                .slice(0, 4)
+                .map((event) => {
+                  const hasEvidence =
+                    (event.evidence_ids || [])
+                      .length > 0;
 
-              <div className="text-muted">
-                Message Screenshot.png
-              </div>
-            </div>
+                  return (
+                    <div
+                      key={event.id}
+                      className={`border-start border-3 ps-3 mb-3 ${
+                        hasEvidence
+                          ? "border-primary"
+                          : "border-danger"
+                      }`}
+                    >
+                      <strong>
+                        {formatDate(
+                          event.event_date
+                        )}{" "}
+                        — {event.title}
+                      </strong>
 
-            <div className="border-start border-3 border-primary ps-3 mb-3">
-              <strong>
-                August 6 — Property Damage
-              </strong>
+                      <div
+                        className={
+                          hasEvidence
+                            ? "text-muted"
+                            : "text-danger"
+                        }
+                      >
+                        {hasEvidence
+                          ? `${
+                              event.evidence_ids
+                                .length
+                            } supporting evidence item${
+                              event.evidence_ids
+                                .length === 1
+                                ? ""
+                                : "s"
+                            }`
+                          : "Missing supporting evidence"}
+                      </div>
+                    </div>
+                  );
+                })
+            )}
 
-              <div className="text-muted">
-                Damage Photo.jpg
-              </div>
-            </div>
-
-            <div className="border-start border-3 border-danger ps-3">
-              <strong>
-                August 8 — Follow-up Request
-              </strong>
-
-              <div className="text-danger">
-                Missing supporting evidence
-              </div>
-            </div>
+            <Link
+              to={`/case/${id}/timeline`}
+              className="btn btn-sm btn-outline-primary mt-2"
+            >
+              View Full Timeline
+            </Link>
           </div>
         </div>
       </main>
