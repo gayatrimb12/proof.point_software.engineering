@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { getCollaborators, saveCollaborators } from "../utils/collaboratorStorage";
+
 
 function ShareCase() {
   const { id } = useParams();
@@ -10,18 +12,14 @@ function ShareCase() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [collaborators, setCollaborators] = useState([
-    {
-      id: 1,
-      email: "owner@example.com",
-      role: "Owner",
-    },
-    {
-      id: 2,
-      email: "collaborator@example.com",
-      role: "Editor",
-    },
-  ]);
+
+const [collaborators, setCollaborators] = useState(() =>
+  getCollaborators(id)
+);
+
+useEffect(() => {
+  setCollaborators(getCollaborators(id));
+}, [id]);
 
   const handleAddCollaborator = (event) => {
     event.preventDefault();
@@ -57,10 +55,14 @@ function ShareCase() {
       role,
     };
 
-    setCollaborators([
+
+    const updatedCollaborators = [
       ...collaborators,
       newCollaborator,
-    ]);
+    ];
+
+    setCollaborators(updatedCollaborators);
+    saveCollaborators(id, updatedCollaborators);
 
     setEmail("");
     setRole("Viewer");
@@ -77,6 +79,7 @@ function ShareCase() {
       );
 
     setCollaborators(updatedCollaborators);
+    saveCollaborators(id, updatedCollaborators);
     setSuccess("Collaborator role updated.");
     setError("");
   };
@@ -98,11 +101,13 @@ function ShareCase() {
       return;
     }
 
-    setCollaborators(
-      collaborators.filter(
-        (item) => item.id !== userId
-      )
+    const updatedCollaborators = collaborators.filter(
+      (item) => item.id !== userId
     );
+
+    setCollaborators(updatedCollaborators);
+    saveCollaborators(id, updatedCollaborators);
+
 
     setSuccess("Collaborator removed.");
     setError("");
