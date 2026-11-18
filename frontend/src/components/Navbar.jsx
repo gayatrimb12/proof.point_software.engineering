@@ -1,39 +1,61 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Navbar() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await fetch(
+        "http://127.0.0.1:5000/api/auth/logout",
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+
+    navigate("/");
+  };
+
   return (
-    <nav className="navbar navbar-dark proof-navbar px-4 py-3">
-      <div className="container-fluid">
+    <nav className="proof-navbar">
+      <div className="navbar-inner">
         <Link
           to="/dashboard"
-          className="navbar-brand d-flex align-items-center gap-2"
+          className="proof-brand"
         >
-          <div className="brand-mark">P</div>
+          <div className="brand-mark">
+            P
+          </div>
 
-          <div>
-            <div className="fw-bold fs-4 lh-1">
+          <div className="brand-copy">
+            <div className="brand-name">
               ProofPoint
             </div>
-            <small className="text-white-50">
-              Evidence organized clearly
-            </small>
+
+            <div className="brand-tagline">
+              Evidence. Timeline. Clarity.
+            </div>
           </div>
         </Link>
 
-        <div className="d-flex gap-2">
+        <div className="navbar-actions">
           <Link
-            className="btn btn-light"
             to="/dashboard"
+            className="navbar-link"
           >
             Dashboard
           </Link>
 
-          <Link
-            className="btn btn-outline-light"
-            to="/"
+          <button
+            type="button"
+            className="navbar-logout"
+            onClick={handleLogout}
           >
             Logout
-          </Link>
+          </button>
         </div>
       </div>
     </nav>
