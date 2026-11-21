@@ -1,145 +1,126 @@
 :root {
-  --bg: #f5f7fb;
+  --bg: #f8fafc;
+
   --surface: #ffffff;
+
   --surface-soft: #f8fafc;
+
+  --surface-blue: #f3f7ff;
+
   --text: #172033;
-  --muted: #697386;
+
+  --text-soft: #334155;
+
+  --muted: #718096;
+
   --primary: #2563eb;
+
   --primary-dark: #1d4ed8;
-  --border: #e4e8ef;
+
+  --primary-soft: #dbeafe;
+
+  --border: #e5eaf1;
+
+  --border-strong: #d6dde8;
+
   --success: #16a34a;
+
+  --danger: #dc2626;
+
+  --warning: #d97706;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  font-synthesis: none;
+
+  text-rendering: optimizeLegibility;
+
+  -webkit-font-smoothing: antialiased;
+
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
+
+  min-width: 320px;
+
+  min-height: 100vh;
+
   background:
-    radial-gradient(circle at top left, #eef4ff 0%, transparent 35%),
-    var(--bg);
-  font-family: Inter, Arial, sans-serif;
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(219, 234, 254, 0.8),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 95% 5%,
+      rgba(237, 233, 254, 0.7),
+      transparent 22%
+    ),
+    #f8fafc;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   color: var(--text);
+
+  line-height: 1.6;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 a {
+  color: var(--primary);
+
   text-decoration: none;
 }
 
-.proof-navbar {
-  background: linear-gradient(135deg, #0f172a, #1e3a8a);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16);
+a:hover {
+  color: var(--primary-dark);
 }
 
-.brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: white;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text);
 }
 
-.page-shell {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 48px 24px;
+p {
+  color: var(--text-soft);
 }
 
-.page-title {
-  font-size: 2rem;
-  font-weight: 750;
-  letter-spacing: -0.03em;
+.text-muted {
+  color: var(--muted) !important;
 }
 
-.page-subtitle {
-  color: var(--muted);
-}
+::selection {
+  background: #bfdbfe;
 
-.proof-card {
-  max-width: 560px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
-}
-
-.case-card {
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-
-.case-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.10);
-  border-color: #cbd5e1;
-}
-
-.case-card-top {
-  height: 6px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
-}
-
-.search-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
-}
-
-.form-control,
-.form-select {
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  padding: 12px 14px;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
-}
-
-.btn {
-  border-radius: 11px;
-  font-weight: 600;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border: none;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
-}
-
-.status-pill {
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.stat-box {
-  background: var(--surface-soft);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.section-label {
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  font-weight: 700;
+  color: #172033;
 }
